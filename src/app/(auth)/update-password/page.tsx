@@ -10,6 +10,9 @@ import { UpdatePasswordForm } from "@/modules/auth/components/UpdatePasswordForm
 
 export const metadata: Metadata = { title: "Nuova password" };
 
+// Niente prerender a build-time (il form crea il client Supabase).
+export const dynamic = "force-dynamic";
+
 export default function UpdatePasswordPage() {
   return (
     <Card>

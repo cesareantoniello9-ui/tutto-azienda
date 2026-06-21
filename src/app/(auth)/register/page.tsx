@@ -12,6 +12,9 @@ import { RegisterForm } from "@/modules/auth/components/RegisterForm";
 
 export const metadata: Metadata = { title: "Registrati" };
 
+// Niente prerender a build-time (il form crea il client Supabase).
+export const dynamic = "force-dynamic";
+
 export default function RegisterPage() {
   return (
     <Card>

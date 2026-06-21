@@ -12,6 +12,9 @@ import { ResetPasswordForm } from "@/modules/auth/components/ResetPasswordForm";
 
 export const metadata: Metadata = { title: "Password dimenticata" };
 
+// Niente prerender a build-time (il form crea il client Supabase).
+export const dynamic = "force-dynamic";
+
 export default function ForgotPasswordPage() {
   return (
     <Card>

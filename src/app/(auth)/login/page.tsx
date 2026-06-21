@@ -12,6 +12,10 @@ import { LoginForm } from "@/modules/auth/components/LoginForm";
 
 export const metadata: Metadata = { title: "Accedi" };
 
+// Niente prerender a build-time: il form crea il client Supabase, che richiede
+// le env. Reso dinamico così la build non dipende dalle env in fase di prerender.
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   return (
     <Card>
