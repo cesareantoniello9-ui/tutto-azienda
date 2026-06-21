@@ -18,6 +18,7 @@ const MESSAGES: Record<string, string> = {
  *  mostra il messaggio reale (così la causa non resta mai nascosta). */
 export function authErrorMessage(error: AuthErrorLike): string {
   if (!error) return "Operazione non riuscita. Riprova.";
-  if (error.code && MESSAGES[error.code]) return MESSAGES[error.code];
+  const mapped = error.code ? MESSAGES[error.code] : undefined;
+  if (mapped) return mapped;
   return error.message || "Operazione non riuscita. Riprova.";
 }
