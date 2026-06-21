@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, UserPlus } from "lucide-react";
 import { registerSchema, type RegisterInput } from "@/modules/auth/schema";
+import { authErrorMessage } from "@/modules/auth/errors";
 import { useSupabase } from "@/hooks/useSupabase";
 import {
   Form,
@@ -40,7 +41,7 @@ export function RegisterForm() {
       },
     });
     if (error) {
-      setServerError("Registrazione non riuscita. Riprova tra poco.");
+      setServerError(authErrorMessage(error));
       return;
     }
     setSuccess(true);

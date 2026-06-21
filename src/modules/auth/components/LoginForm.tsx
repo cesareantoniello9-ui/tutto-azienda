@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Loader2, LogIn } from "lucide-react";
 import { loginSchema, type LoginInput } from "@/modules/auth/schema";
+import { authErrorMessage } from "@/modules/auth/errors";
 import { useSupabase } from "@/hooks/useSupabase";
 import {
   Form,
@@ -30,7 +31,7 @@ export function LoginForm() {
     setServerError(null);
     const { error } = await supabase.auth.signInWithPassword(values);
     if (error) {
-      setServerError("Credenziali non valide. Controlla email e password.");
+      setServerError(authErrorMessage(error));
       return;
     }
     // /app smista verso la dashboard del proprio tenant o verso l'onboarding.
