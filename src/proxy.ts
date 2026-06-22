@@ -3,6 +3,7 @@ import type { NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { User } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { getSupabaseUrl, getSupabaseAnonKey } from "@/lib/supabase/env";
 import { isDemoMode, DEMO_USER_ID } from "@/config/demo";
 
 // Next.js 16: il vecchio "middleware" è ora "proxy" (stessa funzionalità).
@@ -49,8 +50,8 @@ export async function proxy(request: NextRequest) {
   // Refresh sessione Supabase. Se le env mancano o l'auth fallisce, degrada a
   // utente anonimo senza far crashare il sito (niente 500 a livello di proxy).
   let user: User | null = null;
-  const supaUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supaKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const supaUrl = getSupabaseUrl();
+  const supaKey = getSupabaseAnonKey();
   if (supaUrl && supaKey) {
     try {
       const supabase = createServerClient<Database>(supaUrl, supaKey, {
