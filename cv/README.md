@@ -7,9 +7,10 @@ Curriculum professionale in italiano, moderno e ottimizzato per i sistemi **ATS*
 
 | File | Descrizione |
 |---|---|
-| `cv.html` | CV completo con design moderno, header 3D e stampa-friendly (apri nel browser → **Stampa → Salva come PDF**) |
+| `cv.html` | CV completo con header 3D statico, stampa-friendly (apri nel browser → **Stampa → Salva come PDF**) |
+| `cv-video.html` | Stessa grafica ma con **header video animato 3D** (Higgsfield / Kling 3.0) — ideale per portfolio, sito o LinkedIn |
 | `cv-ats.md` | Versione testo puro, massima compatibilità ATS (utile per copia-incolla nei portali) |
-| `assets/` | Immagine header 3D Higgsfield + istruzioni per scaricarla |
+| `assets/` | Immagine + video header 3D Higgsfield e istruzioni per scaricarli |
 
 ## Ruoli target
 Digital Marketing Specialist · Social Media Manager · Content Creator ·

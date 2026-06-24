@@ -17,6 +17,19 @@ completamente offline:
 > fallback che punta automaticamente all'URL Higgsfield qui sopra (serve
 > connessione internet la prima volta).
 
+## Versione VIDEO animata 3D (`header-3d.mp4`)
+
+Header animato in **3D** generato con **Higgsfield** (modello **Kling 3.0**,
+image-to-video, 5s, 16:9, muto). Usato in `cv-video.html`.
+
+Per averlo in locale, scarica il file da questo link e salvalo come
+**`header-3d.mp4`** in questa cartella:
+
+https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_170913_4e250960-2da0-4c10-b743-3ea05f05bd20.mp4
+
+> Anche senza scaricarlo, `cv-video.html` riproduce il video grazie a una
+> seconda `<source>` che punta direttamente all'URL Higgsfield qui sopra.
+
 ## Prompt usato
 
 > Modern 3D isometric illustration representing a multidisciplinary digital
