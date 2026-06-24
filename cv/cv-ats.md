@@ -2,9 +2,8 @@
 ## Digital Marketing & AI Specialist | Content Creator | Event & Project Manager
 
 **Email:** cesareantoniello9@gmail.com
-**Telefono:** +39 ___ _______
+**Telefono:** +39 375 889 0882
 **Località:** Italia — Disponibile da remoto
-**LinkedIn:** linkedin.com/in/______
 
 ---
 
@@ -116,13 +115,14 @@ management, lavoro in team, empatia, gestione dello stress.
 ## LINGUE
 
 - **Italiano:** Madrelingua
-- **Inglese:** Professionale *(da personalizzare in base al livello reale)*
+- **Inglese:** B2 (Intermedio superiore)
 
 ---
 
 ## FORMAZIONE
 
-*(Sezione da completare con titolo di studio, istituto e anno.)*
+**Diploma di Liceo Scientifico** — Maturità scientifica.
+
 Formazione continua e autoformazione su Intelligenza Artificiale, digital marketing,
 advertising e content creation.
 

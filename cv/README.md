@@ -15,10 +15,15 @@ Curriculum professionale in italiano, moderno e ottimizzato per i sistemi **ATS*
 Digital Marketing Specialist · Social Media Manager · Content Creator ·
 AI Specialist · Web Developer · Project Manager · Event Manager.
 
-## Da personalizzare prima dell'invio
-- Numero di telefono e URL LinkedIn (segnaposto `___`)
-- Livello reale di inglese / altre lingue
-- Sezione **Formazione** (titolo di studio, istituto, anno)
+## Dati inseriti
+- **Nome:** Cesare Antoniello
+- **Telefono:** +39 375 889 0882 · **Email:** cesareantoniello9@gmail.com
+- **Formazione:** Diploma di Liceo Scientifico
+- **Lingue:** Italiano (madrelingua), Inglese B2
+
+## Opzionale (da aggiungere se vuoi)
+- Anno di diploma e nome dell'istituto
+- Eventuale profilo LinkedIn (al momento non presente)
 
 ## Note ATS
 - Testo **selezionabile** (non immagini di testo), intestazioni standard
