@@ -30,6 +30,12 @@ https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_2026062
 > Anche senza scaricarlo, `cv-video.html` riproduce il video grazie a una
 > seconda `<source>` che punta direttamente all'URL Higgsfield qui sopra.
 
+### Versione verticale 9:16 (Storie / Reel)
+
+Stesso header animato in formato **9:16**, pronto per Instagram/TikTok/LinkedIn Stories:
+
+https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_171406_10a64bbf-2b59-4487-bad7-e896c807eec7.mp4
+
 ## Prompt usato
 
 > Modern 3D isometric illustration representing a multidisciplinary digital
