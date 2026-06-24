@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CV 3D — Cesare Antoniello | Digital & AI Specialist</title>
+<style>
+  :root{
+    --blue:#3b82f6; --violet:#a78bfa; --coral:#fb7185; --chip:rgba(99,102,241,.18);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"Inter","Segoe UI","Helvetica Neue",Arial,sans-serif;
+    color:#eef2ff; line-height:1.55; background:#05070f; overflow-x:hidden;
+  }
+
+  /* ---- SFONDO VIDEO 3D ---- */
+  .bg-video,.bg-fallback{
+    position:fixed; inset:0; width:100%; height:100%;
+    object-fit:cover; z-index:-2;
+  }
+  .bg-fallback{z-index:-3}
+  .bg-tint{
+    position:fixed; inset:0; z-index:-1;
+    background:
+      radial-gradient(120% 90% at 20% 0%, rgba(37,99,235,.35), transparent 60%),
+      radial-gradient(120% 90% at 90% 10%, rgba(124,58,237,.35), transparent 55%),
+      linear-gradient(180deg, rgba(5,7,15,.55) 0%, rgba(5,7,15,.82) 55%, rgba(5,7,15,.95) 100%);
+  }
+
+  .wrap{max-width:920px; margin:0 auto; padding:46px 20px 60px}
+
+  /* ---- HERO ---- */
+  .hero{ text-align:center; padding:30px 0 26px }
+  .badge{
+    display:inline-block; font-size:11px; letter-spacing:2px; text-transform:uppercase;
+    color:#c7d2fe; border:1px solid rgba(199,210,254,.35);
+    padding:6px 14px; border-radius:999px; margin-bottom:18px; backdrop-filter:blur(6px);
+    background:rgba(255,255,255,.04);
+  }
+  .hero h1{
+    font-size:clamp(34px,7vw,60px); font-weight:800; letter-spacing:.5px; line-height:1.04;
+    background:linear-gradient(90deg,#fff, #c7d2fe 60%, #a78bfa);
+    -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent;
+  }
+  .hero .role{ margin-top:12px; font-size:clamp(14px,2.6vw,18px); font-weight:600; color:#dbeafe }
+  .hero .role b{color:#fff}
+  .contacts{
+    margin-top:18px; display:flex; flex-wrap:wrap; justify-content:center; gap:10px 22px;
+    font-size:13px; color:#cbd5e1;
+  }
+  .contacts a{color:#cbd5e1; text-decoration:none}
+
+  /* ---- CARD GLASS ---- */
+  .card{
+    background:rgba(13,18,33,.55);
+    border:1px solid rgba(148,163,184,.18);
+    border-radius:20px;
+    backdrop-filter:blur(16px) saturate(120%);
+    -webkit-backdrop-filter:blur(16px) saturate(120%);
+    box-shadow:0 30px 80px rgba(0,0,0,.45);
+    padding:30px 30px 8px;
+    margin-top:14px;
+  }
+  section{margin-bottom:26px}
+  .sec-title{
+    font-size:12px; font-weight:800; letter-spacing:1.6px; text-transform:uppercase;
+    color:#93c5fd; display:flex; align-items:center; gap:12px; margin-bottom:14px;
+  }
+  .sec-title::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,rgba(148,163,184,.4),transparent)}
+  p.lead{color:#dbe4f5; font-size:14.5px}
+  b{color:#fff}
+
+  .job{margin-bottom:18px}
+  .job:last-child{margin-bottom:0}
+  .job-head{display:flex; justify-content:space-between; flex-wrap:wrap; gap:4px; align-items:baseline}
+  .job-title{font-weight:700; font-size:16px; color:#fff}
+  .job-meta{font-size:12px; font-weight:600; color:#a78bfa}
+  .job-sub{font-size:13px; color:#93c5fd; margin:2px 0 9px}
+  .job ul{list-style:none}
+  .job li{position:relative; padding-left:18px; margin-bottom:6px; font-size:13.6px; color:#e2e8f0}
+  .job li::before{content:"";position:absolute;left:2px;top:8px;width:6px;height:6px;border-radius:2px;background:var(--coral);transform:rotate(45deg)}
+
+  .chips{display:flex; flex-wrap:wrap; gap:8px}
+  .chip{
+    font-size:12px; font-weight:600; padding:6px 11px; border-radius:9px;
+    background:var(--chip); border:1px solid rgba(129,140,248,.3); color:#dbe4ff;
+  }
+  .chip.soft{background:rgba(251,113,133,.14); border-color:rgba(251,113,133,.3); color:#fecdd3}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:18px 28px}
+  .block h4{font-size:13px; color:#fff; margin-bottom:8px}
+  .tool p{font-size:13px; color:#cbd5e1}
+  .tool h4{font-size:12.5px; color:#93c5fd; margin-bottom:5px}
+
+  .mini b{display:block; font-size:14px; color:#fff}
+  .mini span{font-size:12.5px; color:#cbd5e1}
+  .bar{height:6px; border-radius:4px; background:rgba(148,163,184,.25); margin-top:7px; overflow:hidden}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--blue),var(--violet))}
+
+  .cta{
+    display:inline-flex; align-items:center; gap:8px; margin-top:4px;
+    font-size:13px; font-weight:700; color:#0b1020; text-decoration:none;
+    background:linear-gradient(90deg,#93c5fd,#a78bfa); padding:10px 16px; border-radius:11px;
+  }
+  .foot{text-align:center; font-size:11px; color:#7c899e; padding:22px 10px 0}
+
+  @media(max-width:640px){ .grid2{grid-template-columns:1fr} .card{padding:22px 18px 6px} }
+</style>
+</head>
+<body>
+
+  <!-- SFONDO: video 3D animato (fallback: immagine 3D) -->
+  <img class="bg-fallback" src="https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_170046_707d7369-2f52-45a3-b3fe-dcd8df8e037a.png" alt="" />
+  <video class="bg-video" autoplay loop muted playsinline
+         poster="https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_170046_707d7369-2f52-45a3-b3fe-dcd8df8e037a.png">
+    <source src="https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_170913_4e250960-2da0-4c10-b743-3ea05f05bd20.mp4" type="video/mp4" />
+  </video>
+  <div class="bg-tint"></div>
+
+  <div class="wrap">
+
+    <!-- HERO -->
+    <div class="hero">
+      <span class="badge">Digital · AI · Content · Events</span>
+      <h1>Cesare Antoniello</h1>
+      <div class="role"><b>Digital Marketing &amp; AI Specialist</b> · Content Creator · Event &amp; Project Manager</div>
+      <div class="contacts">
+        <span>✉ <a href="mailto:cesareantoniello9@gmail.com">cesareantoniello9@gmail.com</a></span>
+        <span>📱 +39 375 889 0882</span>
+        <span>📍 Italia · Disponibile da remoto</span>
+      </div>
+    </div>
+
+    <div class="card">
+
+      <section>
+        <div class="sec-title">Profilo Professionale</div>
+        <p class="lead">
+          Professionista digitale <b>multidisciplinare</b> con forte vocazione per il
+          <b>marketing data-driven</b>, la <b>creazione di contenuti</b> e l'applicazione concreta
+          dell'<b>Intelligenza Artificiale</b> ai processi di business. Unisco esperienza nella gestione
+          di gruppi, eventi e relazioni con il cliente a competenze avanzate in <b>social media management,
+          advertising (Meta &amp; Google Ads), sviluppo web AI-assisted e produzione di contenuti visivi</b>.
+          Orientato ai risultati, rapido nell'apprendimento e con mentalità imprenditoriale, trasformo idee
+          in progetti misurabili coordinando team, budget e KPI.
+        </p>
+      </section>
+
+      <section>
+        <div class="sec-title">Esperienza Professionale</div>
+        <div class="job">
+          <div class="job-head">
+            <span class="job-title">Organizzatore di Eventi · Event &amp; Project Manager</span>
+            <span class="job-meta">2022 – 2025</span>
+          </div>
+          <div class="job-sub">Eventi, intrattenimento e progetti su commessa</div>
+          <ul>
+            <li>Pianificato e coordinato l'intero ciclo di vita di eventi, gestendo <b>logistica, fornitori, timeline e budget</b>.</li>
+            <li>Negoziato contratti con fornitori e partner, ottimizzando costi e marginalità.</li>
+            <li>Coordinato <b>team multidisciplinari</b> assegnando ruoli e priorità sotto pressione.</li>
+            <li>Gestito le <b>relazioni con clienti e partner</b> curando l'intera customer experience.</li>
+            <li>Ideato attività di <b>marketing e promozione</b> aumentando visibilità e partecipazione.</li>
+            <li>Risolto imprevisti ed emergenze in tempo reale; sviluppato una solida rete di <b>networking</b>.</li>
+          </ul>
+        </div>
+        <div class="job">
+          <div class="job-head">
+            <span class="job-title">Animatore · Intrattenimento e Gestione Gruppi</span>
+            <span class="job-meta">Prima esperienza</span>
+          </div>
+          <div class="job-sub">Animazione, accoglienza e relazione con il pubblico</div>
+          <ul>
+            <li>Gestito e coinvolto <b>gruppi di persone, famiglie e bambini</b> con esperienze sicure e partecipative.</li>
+            <li>Sviluppato <b>comunicazione e public speaking</b> davanti a pubblici eterogenei.</li>
+            <li><b>Leadership</b> e coordinamento delle attività; problem solving e lavoro sotto pressione.</li>
+            <li>Curato la <b>relazione con i clienti</b> con empatia e orientamento al servizio.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-title">Competenze Tecniche &amp; Digitali</div>
+        <div class="grid2">
+          <div class="block"><h4>Digital Marketing &amp; Advertising</h4>
+            <div class="chips">
+              <span class="chip">Meta Ads</span><span class="chip">Google Ads</span><span class="chip">Funnel Marketing</span>
+              <span class="chip">Lead Generation</span><span class="chip">Customer Acquisition</span><span class="chip">KPI &amp; ottimizzazione</span>
+              <span class="chip">Growth Strategy</span><span class="chip">Competitor Analysis</span>
+            </div>
+          </div>
+          <div class="block"><h4>Social Media &amp; Content</h4>
+            <div class="chips">
+              <span class="chip">Social Media Management</span><span class="chip">Pianificazione editoriale</span><span class="chip">Copywriting</span>
+              <span class="chip">Storytelling</span><span class="chip">Content Marketing</span><span class="chip">Community Management</span>
+              <span class="chip">Branding</span><span class="chip">Performance Analysis</span>
+            </div>
+          </div>
+          <div class="block"><h4>AI &amp; Sviluppo Web</h4>
+            <div class="chips">
+              <span class="chip">Programmazione AI-assisted</span><span class="chip">App web &amp; mobile</span><span class="chip">Siti responsive</span>
+              <span class="chip">UI/UX Design</span><span class="chip">No-code / Low-code</span><span class="chip">Automazione</span>
+              <span class="chip">Problem solving tecnico</span>
+            </div>
+          </div>
+          <div class="block"><h4>Graphic Design &amp; Multimedia</h4>
+            <div class="chips">
+              <span class="chip">Graphic Design</span><span class="chip">Video Editing</span><span class="chip">Contenuti social</span>
+              <span class="chip">Editing fotografico</span><span class="chip">Materiali promozionali</span><span class="chip">Identità visiva</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-title">Competenze Trasversali</div>
+        <div class="chips">
+          <span class="chip soft">Leadership</span><span class="chip soft">Problem Solving</span><span class="chip soft">Comunicazione efficace</span>
+          <span class="chip soft">Public Speaking</span><span class="chip soft">Project Management</span><span class="chip soft">Pensiero strategico</span>
+          <span class="chip soft">Capacità analitiche</span><span class="chip soft">Creatività</span><span class="chip soft">Adattabilità</span>
+          <span class="chip soft">Apprendimento rapido</span><span class="chip soft">Orientamento ai risultati</span><span class="chip soft">Mentalità imprenditoriale</span>
+          <span class="chip soft">Negoziazione</span><span class="chip soft">Time Management</span><span class="chip soft">Lavoro in team</span>
+          <span class="chip soft">Empatia</span><span class="chip soft">Gestione dello stress</span>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-title">Strumenti &amp; Tecnologie</div>
+        <div class="grid2">
+          <div class="tool"><h4>Intelligenza Artificiale</h4><p>Claude · Hexfield · AI generativa testo/immagini/video · prompt engineering · automazione</p></div>
+          <div class="tool"><h4>Advertising &amp; Analytics</h4><p>Meta Business Suite · Meta Ads Manager · Google Ads · KPI &amp; reportistica</p></div>
+          <div class="tool"><h4>Social &amp; Content</h4><p>Instagram · TikTok · Facebook · LinkedIn · pianificazione editoriale · community</p></div>
+          <div class="tool"><h4>Design &amp; Sviluppo</h4><p>Editing foto/video · web AI-assisted · no-code/low-code · UI/UX · cloud</p></div>
+        </div>
+      </section>
+
+      <section>
+        <div class="sec-title">Lingue &amp; Formazione</div>
+        <div class="grid2">
+          <div>
+            <div class="mini" style="margin-bottom:12px"><b>Italiano</b><span>Madrelingua</span><div class="bar"><i style="width:100%"></i></div></div>
+            <div class="mini"><b>Inglese</b><span>B2 — Intermedio superiore</span><div class="bar"><i style="width:75%"></i></div></div>
+          </div>
+          <div>
+            <div class="mini" style="margin-bottom:12px"><b>Diploma di Liceo Scientifico</b><span>Maturità scientifica</span></div>
+            <div class="mini"><b>Formazione continua</b><span>AI, digital marketing, advertising, content creation</span></div>
+          </div>
+        </div>
+      </section>
+
+      <section style="text-align:center; margin-bottom:10px">
+        <a class="cta" href="https://d8j0ntlcm91z4.cloudfront.net/user_3FXJfADIYA4O0kzsOah1cVhQLMC/hf_20260624_171406_10a64bbf-2b59-4487-bad7-e896c807eec7.mp4" target="_blank" rel="noopener">▶ Guarda l'header 3D in versione verticale (Storie/Reel)</a>
+      </section>
+
+    </div>
+
+    <div class="foot">
+      Header 3D animato generato con Higgsfield · Autorizzo il trattamento dei dati personali ai sensi del Reg. UE 2016/679 (GDPR) e del D.Lgs. 196/2003 e s.m.i.
+    </div>
+  </div>
+</body>
+</html>
