@@ -15,6 +15,7 @@
     "db:seed": "supabase db reset --debug"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.125.0",
     "@hookform/resolvers": "^5.4.0",
     "@radix-ui/react-alert-dialog": "^1.1.17",
     "@radix-ui/react-avatar": "^1.2.0",

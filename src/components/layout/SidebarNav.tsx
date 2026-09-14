@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Brain,
   LayoutDashboard,
   Settings,
   Users2,
@@ -35,6 +36,12 @@ export function SidebarNav({ tenantSlug }: { tenantSlug: string }) {
       href: `/${tenantSlug}/crm/clients`,
       activePrefix: `/${tenantSlug}/crm`,
       icon: Users2,
+    },
+    {
+      label: "Memoria",
+      href: `/${tenantSlug}/memoria`,
+      activePrefix: `/${tenantSlug}/memoria`,
+      icon: Brain,
     },
     {
       label: "Impostazioni",
