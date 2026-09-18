@@ -1,0 +1,45 @@
+{
+  "description": "Insieme di riferimento per la valutazione automatica del recupero. Gira sul corpus dimostrativo (src/lib/rag/demo.ts), quindi non richiede né database né chiavi API: è la rete di sicurezza che si esegue a ogni `npm run test`. Per i dati reali di un'azienda si usa invece la scheda «Qualità» della pagina Memoria, che salva ogni giro in rag_eval_runs.",
+  "cases": [
+    {
+      "question": "Che condizioni di pagamento abbiamo concordato con Bianchi Impianti?",
+      "expectedSources": [{ "sourceType": "client", "sourceId": "11111111-1111-4111-8111-111111111101" }],
+      "expectedKeywords": ["60 giorni"]
+    },
+    {
+      "question": "Qual è il totale del preventivo 2026/0042?",
+      "expectedSources": [{ "sourceType": "quote", "sourceId": "11111111-1111-4111-8111-111111111102" }],
+      "expectedKeywords": ["29.280"]
+    },
+    {
+      "question": "A che punto è la trattativa per il rinnovo dell'impianto della Sede Nord?",
+      "expectedSources": [{ "sourceType": "opportunity", "sourceId": "11111111-1111-4111-8111-111111111103" }],
+      "expectedKeywords": ["negoziazione"]
+    },
+    {
+      "question": "Chi è Marco Verdi e che cosa sta cercando?",
+      "expectedSources": [{ "sourceType": "lead", "sourceId": "11111111-1111-4111-8111-111111111104" }],
+      "expectedKeywords": ["magazzino"]
+    },
+    {
+      "question": "Chi deve approvare un preventivo sopra i 20.000 euro?",
+      "expectedSources": [{ "sourceType": "manual", "sourceId": "11111111-1111-4111-8111-111111111105" }],
+      "expectedKeywords": ["direzione commerciale"]
+    },
+    {
+      "question": "Quando ci pagheranno la fattura 2026/118?",
+      "expectedSources": [{ "sourceType": "activity", "sourceId": "11111111-1111-4111-8111-111111111106" }],
+      "expectedKeywords": ["15/09/2026"]
+    },
+    {
+      "question": "Qual è lo sconto massimo applicabile senza autorizzazione?",
+      "expectedSources": [{ "sourceType": "manual", "sourceId": "11111111-1111-4111-8111-111111111105" }],
+      "expectedKeywords": ["10%"]
+    },
+    {
+      "question": "In che settore opera il cliente di Sesto San Giovanni?",
+      "expectedSources": [{ "sourceType": "client", "sourceId": "11111111-1111-4111-8111-111111111101" }],
+      "expectedKeywords": ["impiantistica"]
+    }
+  ]
+}

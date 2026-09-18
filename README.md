@@ -4,8 +4,9 @@ Piattaforma SaaS B2B **multi-tenant** per la gestione aziendale. Ogni azienda
 (tenant) ha dati completamente separati, isolati a livello di database tramite
 PostgreSQL Row-Level Security.
 
-> Stato attuale: **fondamenta + area autenticata**. I moduli di business
-> (CRM, Magazzino) verranno aggiunti come slice verticali separate.
+> Stato attuale: **fondamenta + area autenticata + CRM + memoria aziendale
+> (RAG)**. I moduli restanti (es. Magazzino) verranno aggiunti come slice
+> verticali separate.
 
 ## Stack
 
@@ -19,6 +20,7 @@ PostgreSQL Row-Level Security.
 | Auth / DB / Storage | Supabase (PostgreSQL) |
 | Email | Resend |
 | Pagamenti | Stripe |
+| AI | Claude (Anthropic) + embedding Voyage AI + pgvector |
 | Test | Vitest |
 
 ## Avvio rapido
@@ -44,7 +46,8 @@ senza un backend reale, con un tenant di esempio. Utile per rivedere l'interfacc
 prima di collegare Supabase. In produzione (URL reale) la modalità è sempre inerte.
 
 Pagine visibili in demo: `/`, `/login`, `/register`, `/reset-password`,
-`/onboarding`, `/<slug>/dashboard`, `/<slug>/settings/{general,members,billing}`.
+`/onboarding`, `/<slug>/dashboard`, `/<slug>/memoria`,
+`/<slug>/settings/{general,members,billing}`.
 
 ## Comandi
 
@@ -75,18 +78,22 @@ src/
 │   └── providers/              # ThemeProvider, QueryProvider
 ├── modules/                    # slice verticali per dominio
 │   ├── auth/                   # schema, actions, components
+│   ├── crm/                    # clienti (schema, actions, components)
+│   ├── rag/                    # memoria aziendale (schema, actions, queries, UI)
 │   ├── tenant/                 # schema, actions, components
 │   └── users/                  # queries
 ├── lib/
 │   ├── supabase/               # client browser + server + service-role
+│   ├── rag/                    # motore RAG: chunking, embedding, prompt, ranking
 │   ├── tenant/context.ts       # getCurrentTenant / requireTenant
 │   ├── audit.ts · errors.ts · utils/
+├── services/                   # accesso dati per dominio (crm/, rag/)
 ├── config/                     # env (Zod), demo
 ├── types/                      # database, tenant
 └── proxy.ts                    # ex-middleware (Next 16): auth + tenant resolution
 
 supabase/
-├── migrations/                 # 00001_init, 00002_rls_policies
+├── migrations/                 # 00001_init … 00004_crm, 00005_rag_memoriale
 └── seed/
 ```
 
@@ -99,6 +106,28 @@ supabase/
   `x-tenant-slug` / `x-user-id` negli header.
 - Il client non interroga mai Supabase direttamente per dati sensibili: legge da
   Server Component (`queries.ts`) e muta tramite Server Action (`actions.ts`).
+
+## Memoria aziendale (RAG)
+
+`/<slug>/memoria` risponde in italiano alle domande sul patrimonio informativo
+dell'azienda, citando sempre le fonti. Ricerca ibrida (pgvector + full-text
+italiano fusi con RRF), risposte generate da Claude con citazioni verificabili e
+una memoria a lungo termine che conserva i fatti stabili.
+
+Fonti indicizzate:
+
+- **CRM** — clienti, lead, trattative, preventivi, attività, note
+- **Riepilogo di fine giornata** — «cosa abbiamo fatto oggi», scritto ogni sera
+- **Allegati** — PDF, DOCX e testo, con il contenuto estratto e citabile
+- **Email** — corrispondenza con clienti e lead (filtro privacy predefinito:
+  solo contatti già presenti nel CRM)
+- **Documenti interni** — procedure, listini, FAQ caricati a mano
+
+La qualità si misura: `npm run test` esegue un insieme di domande di riferimento
+(recall@k, MRR), e la scheda «Qualità» fa lo stesso sui dati reali dell'azienda.
+
+Funziona anche senza chiavi API (risposte estrattive, embedding locali). Dettagli
+e configurazione: [`docs/RAG_MEMORIALE.md`](./docs/RAG_MEMORIALE.md).
 
 ## Convenzioni
 

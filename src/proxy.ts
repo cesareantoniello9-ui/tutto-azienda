@@ -84,14 +84,24 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Risolve e inietta il contesto tenant
+  // Risolve e inietta il contesto tenant NELLE HEADER DI RICHIESTA: è così che
+  // `headers()` lo vede lato server (`lib/tenant/context.ts`, `lib/audit.ts`).
+  // Impostarlo sulla risposta lo manderebbe al client senza renderlo leggibile
+  // dal server — vedi `node_modules/next/dist/docs/.../proxy.md` § Setting headers.
   const tenantSlug = extractTenantSlug(request);
+  const requestHeaders = new Headers(request.headers);
   if (tenantSlug) {
-    response.headers.set("x-tenant-slug", tenantSlug);
+    requestHeaders.set("x-tenant-slug", tenantSlug);
   }
-  response.headers.set("x-user-id", user?.id ?? DEMO_USER_ID);
+  requestHeaders.set("x-user-id", user?.id ?? DEMO_USER_ID);
 
-  return response;
+  const withContext = NextResponse.next({ request: { headers: requestHeaders } });
+  // I cookie di sessione aggiornati da Supabase vanno riportati sulla risposta finale.
+  for (const cookie of response.cookies.getAll()) {
+    withContext.cookies.set(cookie);
+  }
+
+  return withContext;
 }
 
 export const config = {
