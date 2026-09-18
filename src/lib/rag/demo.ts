@@ -7,7 +7,7 @@
  * lessicale). Nessuna di queste funzioni viene usata quando il database è reale.
  */
 import { cosineSimilarity, localEmbedding, tokenizeForHashing } from "./embeddings";
-import type { RecalledMemory, RetrievedChunk } from "@/types/rag";
+import type { RagDailyRecapRow, RecalledMemory, RetrievedChunk } from "@/types/rag";
 
 const NOW = "2026-09-01T09:00:00.000Z";
 
@@ -205,4 +205,39 @@ export function demoIndexOverview() {
     chunks: documents,
     last_indexed_at: NOW,
   }));
+}
+
+/** Riepiloghi giornalieri di esempio per la modalità demo. */
+export function demoRecaps(): RagDailyRecapRow[] {
+  return [
+    {
+      id: "33333333-3333-4333-8333-333333333301",
+      company_id: "00000000-0000-0000-0000-000000000001",
+      recap_date: "2026-09-01",
+      summary:
+        "01/09/2026 — 1 preventivo emesso per € 29.280,00, 1 trattativa avanzata.\n\nInviato il preventivo 2026/0042 a Bianchi Impianti S.r.l. per la fornitura di due quadri elettrici. La trattativa «Rinnovo impianto Sede Nord» è passata in negoziazione dopo il sopralluogo tecnico.\n\nDa seguire: revisione del preventivo attesa entro il 15/09.",
+      highlights: ["1 preventivo emesso per € 29.280,00", "1 trattativa aperta"],
+      stats: {
+        clientsCreated: 0,
+        leadsCreated: 0,
+        leadsConverted: 0,
+        opportunitiesOpened: 1,
+        opportunitiesWon: 0,
+        opportunitiesLost: 0,
+        wonAmount: 0,
+        quotesIssued: 1,
+        quotesAccepted: 0,
+        quotedAmount: 29280,
+        activitiesCompleted: 1,
+        activitiesPlanned: 1,
+        notesWritten: 1,
+        emailsReceived: 2,
+        filesUploaded: 0,
+      },
+      generated_by: "deterministic",
+      generated_at: NOW,
+      created_at: NOW,
+      updated_at: NOW,
+    },
+  ];
 }

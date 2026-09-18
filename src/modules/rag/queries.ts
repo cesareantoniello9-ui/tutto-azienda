@@ -8,13 +8,19 @@
 import { cache } from "react";
 import { isDemoMode } from "@/config/demo";
 import { defaultSettings } from "@/lib/rag/config";
-import { demoIndexOverview, demoMemories } from "@/lib/rag/demo";
+import { demoIndexOverview, demoMemories, demoRecaps } from "@/lib/rag/demo";
 import { requireTenant } from "@/lib/tenant/context";
 import { ragConversationsService } from "@/services/rag/conversations.service";
+import { ragEvalService } from "@/services/rag/eval.service";
+import { ragFilesService } from "@/services/rag/files.service";
 import { ragMemoriesService } from "@/services/rag/memories.service";
+import { ragRecapService } from "@/services/rag/recap.service";
 import { ragSettingsService } from "@/services/rag/settings.service";
 import type {
   RagConversationRow,
+  RagDailyRecapRow,
+  RagEvalCaseRow,
+  RagFileRow,
   RagIndexOverviewRow,
   RagMemoryRow,
   RagMessageRow,
@@ -76,3 +82,27 @@ export const getConversationMessages = cache(
     return ragConversationsService.messages(conversationId);
   },
 );
+
+// ─────────────────────────────────────────────────────────────
+// Fonti estese
+// ─────────────────────────────────────────────────────────────
+
+export const getDailyRecaps = cache(async (): Promise<RagDailyRecapRow[]> => {
+  if (isDemoMode()) return demoRecaps();
+  return ragRecapService.list(14);
+});
+
+export const getFiles = cache(async (): Promise<RagFileRow[]> => {
+  if (isDemoMode()) return [];
+  return ragFilesService.list(30);
+});
+
+export const getEvalCases = cache(async (): Promise<RagEvalCaseRow[]> => {
+  if (isDemoMode()) return [];
+  return ragEvalService.listCases();
+});
+
+export const getEvalRuns = cache(async () => {
+  if (isDemoMode()) return [];
+  return ragEvalService.recentRuns(5);
+});

@@ -71,3 +71,73 @@ export const feedbackSchema = z.object({
   comment: z.string().trim().max(1000).optional(),
 });
 export type FeedbackValues = z.infer<typeof feedbackSchema>;
+
+// ─────────────────────────────────────────────────────────────
+// Fonti estese
+// ─────────────────────────────────────────────────────────────
+
+/** Generazione manuale del riepilogo di una giornata. */
+export const recapRequestSchema = z.object({
+  date: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, "Data non valida (formato atteso: AAAA-MM-GG)")
+    .optional(),
+  force: z.boolean().optional(),
+});
+export type RecapRequestValues = z.infer<typeof recapRequestSchema>;
+
+/** Metadati di un allegato caricato (il file viaggia a parte, nel FormData). */
+export const fileUploadSchema = z.object({
+  title: z.string().trim().max(200).optional(),
+  category: z.string().trim().max(100).optional(),
+  clientId: z.uuid().nullish(),
+  leadId: z.uuid().nullish(),
+  opportunityId: z.uuid().nullish(),
+});
+export type FileUploadValues = z.infer<typeof fileUploadSchema>;
+
+/** Payload normalizzato di una email in ingresso. */
+export const inboundEmailSchema = z.object({
+  companySlug: z.string().trim().min(3).max(63).optional(),
+  companyId: z.uuid().optional(),
+  messageId: z.string().trim().max(500).nullish(),
+  threadId: z.string().trim().max(500).nullish(),
+  direction: z.enum(["inbound", "outbound"]).optional(),
+  subject: z.string().trim().max(500).nullish(),
+  from: z.string().trim().min(3).max(320),
+  fromName: z.string().trim().max(200).nullish(),
+  to: z.array(z.string().trim().max(320)).max(50).optional(),
+  cc: z.array(z.string().trim().max(320)).max(50).optional(),
+  text: z.string().max(500_000).nullish(),
+  html: z.string().max(1_000_000).nullish(),
+  sentAt: z.string().max(60).nullish(),
+  hasAttachments: z.boolean().optional(),
+});
+export type InboundEmailValues = z.infer<typeof inboundEmailSchema>;
+
+/** Caso della valutazione automatica. */
+export const evalCaseSchema = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(5, "La domanda è troppo corta")
+    .max(2000),
+  expectedSources: z
+    .array(
+      z.object({
+        sourceType: z.enum(RAG_SOURCE_TYPES),
+        sourceId: z.uuid().optional(),
+      }),
+    )
+    .max(20)
+    .default([]),
+  expectedKeywords: z.array(z.string().trim().min(1).max(120)).max(20).default([]),
+  note: z.string().trim().max(500).nullish(),
+});
+export type EvalCaseValues = z.infer<typeof evalCaseSchema>;
+
+export const evalRunSchema = z.object({
+  mode: z.enum(["retrieval", "answer"]).default("retrieval"),
+  label: z.string().trim().max(120).optional(),
+});
+export type EvalRunValues = z.infer<typeof evalRunSchema>;

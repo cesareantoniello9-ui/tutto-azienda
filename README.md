@@ -110,10 +110,21 @@ supabase/
 ## Memoria aziendale (RAG)
 
 `/<slug>/memoria` risponde in italiano alle domande sul patrimonio informativo
-dell'azienda — clienti, lead, trattative, preventivi, attività, note e documenti
-interni — citando sempre le fonti. Ricerca ibrida (pgvector + full-text italiano
-fusi con RRF), risposte generate da Claude con citazioni verificabili e una
-memoria a lungo termine che conserva i fatti stabili.
+dell'azienda, citando sempre le fonti. Ricerca ibrida (pgvector + full-text
+italiano fusi con RRF), risposte generate da Claude con citazioni verificabili e
+una memoria a lungo termine che conserva i fatti stabili.
+
+Fonti indicizzate:
+
+- **CRM** — clienti, lead, trattative, preventivi, attività, note
+- **Riepilogo di fine giornata** — «cosa abbiamo fatto oggi», scritto ogni sera
+- **Allegati** — PDF, DOCX e testo, con il contenuto estratto e citabile
+- **Email** — corrispondenza con clienti e lead (filtro privacy predefinito:
+  solo contatti già presenti nel CRM)
+- **Documenti interni** — procedure, listini, FAQ caricati a mano
+
+La qualità si misura: `npm run test` esegue un insieme di domande di riferimento
+(recall@k, MRR), e la scheda «Qualità» fa lo stesso sui dati reali dell'azienda.
 
 Funziona anche senza chiavi API (risposte estrattive, embedding locali). Dettagli
 e configurazione: [`docs/RAG_MEMORIALE.md`](./docs/RAG_MEMORIALE.md).

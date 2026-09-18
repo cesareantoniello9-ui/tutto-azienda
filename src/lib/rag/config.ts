@@ -32,6 +32,14 @@ export const DEFAULT_MIN_SIMILARITY = 0.15;
 export const MAX_CHUNKS_PER_DOCUMENT = 3;
 /** Quanti ricordi a lungo termine richiamare. */
 export const DEFAULT_MEMORY_TOP_K = 5;
+/** Ora locale suggerita per il riepilogo di fine giornata. */
+export const DEFAULT_RECAP_HOUR = 19;
+/** Quanti eventi al massimo entrano nel riepilogo giornaliero. */
+export const MAX_RECAP_EVENTS = 60;
+/** Tetto di caratteri per il testo estratto da un allegato. */
+export const MAX_FILE_TEXT_CHARS = 200_000;
+/** Dimensione massima di un allegato (25 MB, come il bucket). */
+export const MAX_FILE_BYTES = 25 * 1024 * 1024;
 /** Turni di conversazione precedenti inviati al modello. */
 export const MAX_HISTORY_TURNS = 8;
 /** Tetto di caratteri per l'intero contesto inviato al modello. */
@@ -86,6 +94,12 @@ export function defaultSettings(companyId: string): RagSettings {
     answer_model: process.env.RAG_ANSWER_MODEL?.trim() || DEFAULT_ANSWER_MODEL,
     embedding_model: process.env.RAG_EMBEDDING_MODEL?.trim() || DEFAULT_EMBEDDING_MODEL,
     effort: normalizeEffort(process.env.RAG_EFFORT),
+    daily_recap_enabled: true,
+    daily_recap_hour: DEFAULT_RECAP_HOUR,
+    email_ingestion_enabled: true,
+    // Predefinito prudente: entra solo la posta di contatti già nel CRM.
+    email_only_known_contacts: true,
+    email_allowed_domains: [],
     created_at: now,
     updated_at: now,
   };
@@ -105,4 +119,16 @@ export const INGESTABLE_SOURCES: RagSourceType[] = [
   "quote",
   "activity",
   "note",
+  "daily",
+  "file",
+  "email",
 ];
+
+/** Tipi MIME da cui sappiamo estrarre testo. */
+export const SUPPORTED_FILE_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "text/plain",
+  "text/markdown",
+  "text/csv",
+] as const;

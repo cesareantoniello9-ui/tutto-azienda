@@ -24,6 +24,9 @@ import type {
 import type { Tenant } from "@/types/tenant";
 import type {
   IngestionReport,
+  RagDailyRecapRow,
+  RagEmailRow,
+  RagFileRow,
   RagSourceType,
   SourceDocument,
 } from "@/types/rag";
@@ -34,6 +37,9 @@ import { checksum, estimateTokens, itCurrency } from "@/lib/rag/text";
 import {
   serializeActivity,
   serializeClient,
+  serializeDailyRecap,
+  serializeEmail,
+  serializeFile,
   serializeLead,
   serializeNote,
   serializeOpportunity,
@@ -62,6 +68,9 @@ type CompanyGraph = {
   quoteItems: Map<string, QuoteItem[]>;
   activities: Activity[];
   notes: Note[];
+  emails: RagEmailRow[];
+  files: RagFileRow[];
+  dailyRecaps: Map<string, RagDailyRecapRow>;
   profiles: Map<string, string>;
 };
 
@@ -258,15 +267,17 @@ async function fullScan(
     ["quote", "quotes"],
     ["activity", "activities"],
     ["note", "notes"],
+    ["daily", "rag_daily_recaps"],
+    ["email", "rag_emails"],
+    ["file", "rag_files"],
   ];
 
   for (const [sourceType, table] of tables) {
     if (!INGESTABLE_SOURCES.includes(sourceType)) continue;
-    const { data, error } = await supabase
-      .from(table)
-      .select("id")
-      .eq("company_id", companyId)
-      .limit(MAX_ROWS_PER_TABLE);
+    let query = supabase.from(table).select("id").eq("company_id", companyId);
+    // Un allegato senza testo estratto non è ancora un documento.
+    if (table === "rag_files") query = query.eq("extraction_status", "done");
+    const { data, error } = await query.limit(MAX_ROWS_PER_TABLE);
     if (error) throw toRagError(`Lettura di ${table} non riuscita`, error);
     for (const row of data ?? []) {
       entries.push({
@@ -298,17 +309,31 @@ async function loadCompanyGraph(
     return (data ?? []) as T[];
   };
 
-  const [tenantResult, clients, leads, opportunities, quotes, quoteItems, activities, notes] =
-    await Promise.all([
-      supabase.from("tenants").select("*").eq("id", companyId).maybeSingle(),
-      table<Client>("clients"),
-      table<Lead>("leads"),
-      table<Opportunity>("opportunities"),
-      table<Quote>("quotes"),
-      table<QuoteItem>("quote_items"),
-      table<Activity>("activities"),
-      table<Note>("notes"),
-    ]);
+  const [
+    tenantResult,
+    clients,
+    leads,
+    opportunities,
+    quotes,
+    quoteItems,
+    activities,
+    notes,
+    emails,
+    files,
+    dailyRecaps,
+  ] = await Promise.all([
+    supabase.from("tenants").select("*").eq("id", companyId).maybeSingle(),
+    table<Client>("clients"),
+    table<Lead>("leads"),
+    table<Opportunity>("opportunities"),
+    table<Quote>("quotes"),
+    table<QuoteItem>("quote_items"),
+    table<Activity>("activities"),
+    table<Note>("notes"),
+    table<RagEmailRow>("rag_emails"),
+    table<RagFileRow>("rag_files"),
+    table<RagDailyRecapRow>("rag_daily_recaps"),
+  ]);
 
   const itemsByQuote = new Map<string, QuoteItem[]>();
   for (const item of quoteItems) {
@@ -351,6 +376,9 @@ async function loadCompanyGraph(
     quoteItems: itemsByQuote,
     activities,
     notes,
+    emails,
+    files,
+    dailyRecaps: new Map(dailyRecaps.map((row) => [row.id, row])),
     profiles,
   };
 }
@@ -429,9 +457,11 @@ function buildDocument(
         (o) => o.client_id === client.id,
       );
       const quotes = [...graph.quotes.values()].filter((q) => q.client_id === client.id);
+      const emails = graph.emails.filter((email) => email.client_id === client.id);
       return serializeClient(client, {
         ownerName: client.owner_id ? (graph.profiles.get(client.owner_id) ?? null) : null,
         ...recentFor(graph, (row) => row.client_id === client.id),
+        ...attachmentsFor(graph, { clientId: client.id }),
         stats: {
           "Trattative totali": opportunities.length,
           "Trattative aperte": opportunities.filter((o) => o.status === "open").length,
@@ -443,6 +473,7 @@ function buildDocument(
             ) ?? undefined,
           "Preventivi": quotes.length,
           "Preventivi accettati": quotes.filter((q) => q.status === "accepted").length,
+          "Email registrate": emails.length || undefined,
         },
       });
     }
@@ -456,6 +487,7 @@ function buildDocument(
           ? (graph.clients.get(lead.converted_client_id)?.name ?? null)
           : null,
         ...recentFor(graph, (row) => row.lead_id === lead.id),
+        ...attachmentsFor(graph, { leadId: lead.id }),
       });
     }
 
@@ -511,9 +543,77 @@ function buildDocument(
       });
     }
 
+    case "daily": {
+      const recap = graph.dailyRecaps.get(sourceId);
+      if (!recap) return null;
+      return serializeDailyRecap({
+        id: recap.id,
+        recap_date: recap.recap_date,
+        summary: recap.summary,
+        highlights: Array.isArray(recap.highlights) ? recap.highlights : [],
+        stats: (recap.stats ?? {}) as unknown as Record<string, number>,
+        generated_by: recap.generated_by,
+      });
+    }
+
+    case "file": {
+      const file = graph.files.find((row) => row.id === sourceId);
+      // Senza testo estratto non c'è nulla da indicizzare.
+      if (!file || file.extraction_status !== "done") return null;
+      return serializeFile(file, {
+        ...relationNames(graph, {
+          clientId: file.client_id,
+          leadId: file.lead_id,
+          opportunityId: file.opportunity_id,
+        }),
+      });
+    }
+
+    case "email": {
+      const email = graph.emails.find((row) => row.id === sourceId);
+      if (!email) return null;
+      return serializeEmail(email, {
+        ...relationNames(graph, { clientId: email.client_id, leadId: email.lead_id }),
+      });
+    }
+
     default:
       return null;
   }
+}
+
+/** Email e allegati collegati a un'entità, da allegare alla sua scheda. */
+function attachmentsFor(
+  graph: CompanyGraph,
+  ids: { clientId?: string; leadId?: string },
+): Pick<RelatedContext, "recentEmails" | "recentFiles"> {
+  const matchEmail = (email: RagEmailRow) =>
+    (ids.clientId && email.client_id === ids.clientId) ||
+    (ids.leadId && email.lead_id === ids.leadId);
+  const matchFile = (file: RagFileRow) =>
+    (ids.clientId && file.client_id === ids.clientId) ||
+    (ids.leadId && file.lead_id === ids.leadId);
+
+  return {
+    recentEmails: graph.emails
+      .filter(matchEmail)
+      .sort((a, b) => Date.parse(b.sent_at) - Date.parse(a.sent_at))
+      .slice(0, 10)
+      .map((email) => ({
+        subject: email.subject,
+        direction: email.direction,
+        sent_at: email.sent_at,
+      })),
+    recentFiles: graph.files
+      .filter(matchFile)
+      .sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at))
+      .slice(0, 10)
+      .map((file) => ({
+        file_name: file.file_name,
+        title: file.title,
+        created_at: file.created_at,
+      })),
+  };
 }
 
 // ─────────────────────────────────────────────────────────────

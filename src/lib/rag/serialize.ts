@@ -90,6 +90,12 @@ export type RelatedContext = {
   /** Ultime interazioni da allegare al memoriale dell'entità. */
   recentNotes?: { body: string; created_at: string }[];
   recentActivities?: Pick<Activity, "subject" | "type" | "status" | "due_at">[];
+  recentEmails?: {
+    subject: string | null;
+    direction: "inbound" | "outbound";
+    sent_at: string;
+  }[];
+  recentFiles?: { file_name: string; title: string | null; created_at: string }[];
   /** Aggregati calcolati dal chiamante (evita N query nel serializzatore). */
   stats?: Record<string, string | number | null | undefined>;
 };
@@ -121,6 +127,27 @@ function interactions(related: RelatedContext): string {
       .map((n) => `- [${itDate(n.created_at) ?? "senza data"}] ${truncate(normalizeText(n.body), 400)}`)
       .join("\n");
     parts.push(`### Note recenti\n${rows}`);
+  }
+
+  if (related.recentEmails?.length) {
+    const rows = related.recentEmails
+      .slice(0, 10)
+      .map(
+        (e) =>
+          `- [${itDate(e.sent_at) ?? "senza data"}] email ${
+            e.direction === "inbound" ? "ricevuta" : "inviata"
+          }: «${e.subject?.trim() || "senza oggetto"}»`,
+      )
+      .join("\n");
+    parts.push(`### Email recenti\n${rows}`);
+  }
+
+  if (related.recentFiles?.length) {
+    const rows = related.recentFiles
+      .slice(0, 10)
+      .map((f) => `- [${itDate(f.created_at) ?? "senza data"}] ${f.title?.trim() || f.file_name}`)
+      .join("\n");
+    parts.push(`### Allegati\n${rows}`);
   }
 
   return parts.join("\n\n");
@@ -440,5 +467,154 @@ export function serializeManual(input: {
       `# ${input.title}${input.category ? `\nCategoria: ${input.category}` : ""}\n\n${body}`,
     ),
     metadata: { category: input.category ?? null, manual: true },
+  };
+}
+
+// ─────────────────────────────────────────────────────────────
+// Fonti estese: riepilogo giornaliero, allegati, email
+// ─────────────────────────────────────────────────────────────
+
+/** Riepilogo di fine giornata → documento del memoriale. */
+export function serializeDailyRecap(recap: {
+  id: string;
+  recap_date: string;
+  summary: string;
+  highlights: string[];
+  stats: Record<string, number>;
+  generated_by?: string | null;
+}): SourceDocument {
+  const data = itDate(recap.recap_date) ?? recap.recap_date;
+
+  const numeri = Object.entries(recap.stats ?? {})
+    .filter(([, value]) => Number(value) > 0)
+    .map(([key, value]) => `- ${key}: ${value}`)
+    .join("\n");
+
+  const content =
+    `# Riepilogo della giornata — ${data}\n${normalizeText(recap.summary)}` +
+    section("In sintesi", (recap.highlights ?? []).map((item) => `- ${item}`).join("\n")) +
+    section("Numeri della giornata", numeri);
+
+  return {
+    sourceType: "daily",
+    sourceId: recap.id,
+    title: `Riepilogo giornaliero — ${data}`,
+    summary:
+      (recap.highlights ?? []).length > 0
+        ? `${data}: ${(recap.highlights ?? []).join(", ")}.`
+        : truncate(normalizeText(recap.summary), 180),
+    content: normalizeText(content),
+    metadata: {
+      recap_date: recap.recap_date,
+      highlights: recap.highlights ?? [],
+      stats: recap.stats ?? {},
+      generated_by: recap.generated_by ?? null,
+    },
+  };
+}
+
+/** Allegato con testo estratto → documento del memoriale. */
+export function serializeFile(
+  file: {
+    id: string;
+    file_name: string;
+    title: string | null;
+    category: string | null;
+    mime_type: string;
+    page_count: number | null;
+    extracted_text: string | null;
+    created_at: string;
+    client_id: string | null;
+    lead_id: string | null;
+    opportunity_id: string | null;
+  },
+  related: RelatedContext = {},
+): SourceDocument {
+  const titolo = file.title?.trim() || file.file_name;
+  const linked = related.clientName ?? related.leadName ?? related.opportunityTitle ?? null;
+
+  const head = labeledLines([
+    ["Nome del file", file.file_name],
+    ["Categoria", file.category],
+    ["Riferito a", linked],
+    ["Pagine", file.page_count],
+    ["Caricato il", itDate(file.created_at)],
+  ]);
+
+  const content =
+    `# Allegato — ${titolo}\n${head}` +
+    section("Contenuto del documento", normalizeText(file.extracted_text ?? ""));
+
+  return {
+    sourceType: "file",
+    sourceId: file.id,
+    title: `Allegato — ${titolo}`,
+    summary: truncate(normalizeText(file.extracted_text ?? titolo), 180),
+    content: normalizeText(content),
+    metadata: {
+      file_name: file.file_name,
+      category: file.category,
+      mime_type: file.mime_type,
+      page_count: file.page_count,
+      client_id: file.client_id,
+      lead_id: file.lead_id,
+      opportunity_id: file.opportunity_id,
+    },
+  };
+}
+
+/** Email → documento del memoriale. */
+export function serializeEmail(
+  email: {
+    id: string;
+    subject: string | null;
+    direction: "inbound" | "outbound";
+    from_address: string;
+    from_name: string | null;
+    to_addresses: string[];
+    cc_addresses: string[];
+    body_text: string;
+    sent_at: string;
+    has_attachments: boolean;
+    client_id: string | null;
+    lead_id: string | null;
+  },
+  related: RelatedContext = {},
+): SourceDocument {
+  const linked = related.clientName ?? related.leadName ?? null;
+  const mittente = email.from_name ? `${email.from_name} <${email.from_address}>` : email.from_address;
+
+  const head = labeledLines([
+    ["Direzione", email.direction === "inbound" ? "ricevuta" : "inviata"],
+    ["Da", mittente],
+    ["A", email.to_addresses.join(", ")],
+    ["In copia", email.cc_addresses.join(", ")],
+    ["Data", itDate(email.sent_at)],
+    ["Contatto", linked],
+    ["Allegati", email.has_attachments ? "sì" : null],
+  ]);
+
+  const oggetto = email.subject?.trim() || "senza oggetto";
+  const content =
+    `# Email — ${oggetto}\n${head}` + section("Testo del messaggio", normalizeText(email.body_text));
+
+  return {
+    sourceType: "email",
+    sourceId: email.id,
+    title: `Email — ${truncate(oggetto, 80)}${linked ? ` (${linked})` : ""}`,
+    summary: `${email.direction === "inbound" ? "Ricevuta da" : "Inviata a"} ${
+      linked ?? mittente
+    }: ${truncate(normalizeText(email.body_text), 140)}`,
+    content: normalizeText(content),
+    metadata: {
+      subject: email.subject,
+      direction: email.direction,
+      from: email.from_address,
+      to: email.to_addresses,
+      sent_at: email.sent_at,
+      client_id: email.client_id,
+      lead_id: email.lead_id,
+      has_attachments: email.has_attachments,
+    },
   };
 }

@@ -6,15 +6,15 @@ interrogabile in italiano — con le fonti sempre citate e l'isolamento fra
 aziende garantito dal database, non dal codice applicativo.
 
 ```
- dati di business            memoriale                      risposta
- ────────────────            ─────────                      ────────
- clients, leads,   trigger   rag_documents   ricerca ibrida   Claude Opus 5
- opportunities,    ───────▶  + rag_chunks    ─────────────▶   con blocchi
- quotes, notes,    coda      (embedding +    RRF + riordino   `document`
- activities, …               full-text it)                   → citazioni reali
-                                   ▲                              │
-                             rag_memories ◀────── estrazione ─────┘
-                             (memoria a lungo termine)
+ fonti                       memoriale                      risposta
+ ─────                       ─────────                      ────────
+ CRM: clients,     trigger   rag_documents   ricerca ibrida   Claude Opus 5
+ leads, quotes,    ───────▶  + rag_chunks    ─────────────▶   con blocchi
+ opportunities…    coda      (embedding +    RRF + riordino   `document`
+ allegati (PDF,              full-text it)                   → citazioni reali
+ DOCX) · email ·                    ▲                              │
+ riepilogo serale        rag_memories ◀────── estrazione ───────────┘
+                        (memoria a lungo termine)
 ```
 
 ## Componenti
@@ -22,11 +22,15 @@ aziende garantito dal database, non dal codice applicativo.
 | Percorso | Ruolo |
 |---|---|
 | `supabase/migrations/00005_rag_memoriale.sql` | Schema, RLS, trigger, funzioni di ricerca |
+| `supabase/migrations/00006_…` + `00007_rag_fonti_estese.sql` | Riepilogo giornaliero, allegati, email, valutazione |
 | `src/lib/rag/` | Motore puro: chunking, embedding, serializzazione, prompt, riordino |
 | `src/services/rag/` | Accesso al database: indicizzazione, ricerca, conversazioni, ricordi |
 | `src/modules/rag/` | Schema Zod, Server Action, componenti UI |
 | `src/app/(tenant)/[tenantSlug]/memoria/` | Pagina + route SSE `POST …/memoria/ask` |
 | `src/app/api/webhooks/rag-index/` | Worker di indicizzazione per cron esterni |
+| `src/app/api/webhooks/rag-daily/` | Riepilogo di fine giornata (cron serale) |
+| `src/app/api/webhooks/rag-email/` | Email in ingresso dal provider di posta |
+| `tests/eval/` + `tests/fixtures/` | Valutazione automatica del recupero in CI |
 | `scripts/verify-rag.mjs` | Verifica dello schema su un Supabase reale |
 
 ## Come funziona
@@ -77,6 +81,68 @@ stabili («paga a 60 giorni», «il listino cambia a gennaio») e li salva in
 non si modificano: si **sostituiscono** (`superseded_by`), così la storia resta
 verificabile. Quelli `pinned` entrano sempre nel contesto.
 
+## Le fonti
+
+### CRM
+Clienti, lead, trattative, preventivi (righe incluse), attività e note: ogni
+entità diventa una scheda in italiano, aggiornata dai trigger a ogni modifica.
+
+### Riepilogo di fine giornata
+Ogni sera (`POST /api/webhooks/rag-daily`) il sistema legge la giornata e scrive
+«cosa abbiamo fatto oggi»: trattative aperte e chiuse, preventivi emessi e
+accettati, attività completate, note, email, allegati. **I numeri li calcola il
+database** (`buildDailySnapshot`, funzione pura); Claude scrive solo la
+narrazione, e senza chiave il riepilogo viene comunque compilato dai fatti.
+
+Il riepilogo entra nell'indice come gli altri documenti: «quando abbiamo deciso
+di rivedere il prezzo a Bianchi?» diventa una domanda con risposta, mesi dopo.
+
+La classificazione usa il **fuso orario dell'azienda** (`tenants.settings.timezone`):
+un'attività delle 23:30 appartiene alla giornata giusta.
+
+### Allegati (PDF, DOCX, testo)
+Il file va in Supabase Storage (bucket privato `rag-files`, percorso
+`{company_id}/{file_id}.ext`); in tabella resta il testo estratto — PDF via
+`unpdf`, DOCX via `mammoth`. Un PDF scansionato non contiene testo: viene
+marcato `unsupported` invece di entrare nell'indice come documento vuoto (per
+quello servirebbe un OCR, che è una scelta a parte).
+
+### Email e comunicazioni
+`POST /api/webhooks/rag-email` accetta il formato dell'app e i payload dei
+provider più diffusi (Resend, Postmark, SendGrid, Mailgun), riconosce l'azienda
+dagli indirizzi coinvolti e collega la email al cliente o al lead.
+
+**Privacy come impostazione predefinita:** entra solo la posta legata a un
+contatto già presente nel CRM (per indirizzo o per dominio). Le altre vengono
+scartate con un motivo esplicito. Due leve in `rag_settings`:
+`email_only_known_contacts` (disattivabile) e `email_allowed_domains`.
+
+La catena citata («Il giorno … ha scritto:», righe con `>`) viene tagliata: senza,
+ogni risposta reindicizzerebbe l'intera conversazione precedente.
+
+## Valutazione automatica
+
+Misurare invece di giudicare a sensazione. Quattro metriche:
+
+| Metrica | Domanda a cui risponde |
+|---|---|
+| `recall@k` | Il documento giusto è stato recuperato? |
+| `MRR` | Era in cima o in fondo? |
+| Risposte ancorate | La risposta cita davvero il contesto recuperato? |
+| Dati attesi presenti | Importi e scadenze attesi compaiono nella risposta? |
+
+Due livelli:
+
+- **In CI** — `tests/eval/rag-golden.test.ts` esegue l'insieme di riferimento
+  (`tests/fixtures/rag-golden-cases.json`) sul corpus dimostrativo con embedding
+  locali deterministici: nessun database, nessuna chiave, stesso risultato a ogni
+  esecuzione. Le soglie stanno sotto il valore attuale (recall ≥ 0,75, MRR ≥ 0,60):
+  servono a intercettare i peggioramenti, non a fotografare la prestazione del giorno.
+- **Sui dati reali** — la scheda «Qualità» della pagina Memoria: si scrivono le
+  domande che il team fa davvero, si misura il recupero (gratis) o le risposte
+  complete (una chiamata al modello per caso), e ogni giro resta in
+  `rag_eval_runs` per confrontare le versioni nel tempo.
+
 ## Isolamento fra aziende
 
 Ogni tabella `rag_*` ha RLS con `company_id = public.current_tenant_id()`, come
@@ -94,7 +160,8 @@ identico restano invisibili l'una all'altra, anche attraverso l'RPC.
 | `ANTHROPIC_API_KEY` | Nessuna sintesi: la risposta mostra gli estratti trovati, dichiarandolo |
 | `VOYAGE_API_KEY` | Embedding locali deterministici: ricerca prevalentemente lessicale |
 | `SUPABASE_SERVICE_ROLE_KEY` | Indicizzazione non disponibile (serve per scrivere i chunk) |
-| `RAG_REINDEX_SECRET` | Webhook di re-indicizzazione disattivato (HTTP 503) |
+| `RAG_REINDEX_SECRET` | Webhook di re-indicizzazione e riepilogo disattivati (HTTP 503) |
+| `RAG_EMAIL_SECRET` | Webhook email: ricade su `RAG_REINDEX_SECRET` |
 | `RAG_ANSWER_MODEL` | Default `claude-opus-5` |
 | `RAG_EMBEDDING_MODEL` | Default `voyage-3.5` (1024 dimensioni) |
 | `RAG_EFFORT` | Default `medium` (`low` … `max`) |
@@ -119,6 +186,29 @@ Senza `companyId` processa le aziende con lavoro in coda (max 20 per giro). Con
 
 Dall'interfaccia, la card «Stato dell'indice» fa la stessa cosa su richiesta.
 
+### Riepilogo serale
+
+```bash
+# Una volta al giorno, dopo l'orario di chiusura (rag_settings.daily_recap_hour).
+curl -X POST https://<dominio>/api/webhooks/rag-daily \
+  -H "Authorization: Bearer $RAG_REINDEX_SECRET" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+### Email in ingresso
+
+```bash
+curl -X POST https://<dominio>/api/webhooks/rag-email \
+  -H "Authorization: Bearer $RAG_EMAIL_SECRET" \
+  -H "Content-Type: application/json" \
+  -d '{"from":"acquisti@cliente.it","to":["info@azienda.it"],
+       "subject":"Richiesta offerta","text":"Ci serve un preventivo."}'
+```
+
+Da configurare come webhook di posta in arrivo sul provider. L'azienda si deduce
+dagli indirizzi; in alternativa si passa `companyId` o `companySlug`, oppure si
+usa un indirizzo di servizio con il suffisso (`memoria+{slug}@dominio`).
+
 ## Costi
 
 Due voci: **embedding** (una volta per documento che cambia) e **generazione**
@@ -137,13 +227,16 @@ Due voci: **embedding** (una volta per documento che cambia) e **generazione**
   grandi conviene valutare un indice parziale o `ivfflat` con liste dedicate.
 - L'estrazione dei ricordi costa una chiamata extra al modello per ogni scambio:
   si può disattivare con `memory_enabled = false`.
-- Non c'è ancora ricerca su allegati (PDF/DOCX): l'origine `file` è predisposta
-  nello schema ma non ha ancora una pipeline di estrazione testo.
+- I PDF scansionati restano fuori dall'indice: manca un OCR.
+- L'ingestione email è un webhook: non c'è ancora una sincronizzazione IMAP o
+  OAuth Gmail/Outlook che vada a prendere la posta da sola.
+- La posta in uscita entra solo se il provider la inoltra al webhook
+  (`direction: "outbound"`).
 
 ## Test
 
 ```bash
-npm run test   # 5 suite dedicate: chunking, serializzazione, recupero, prompt, schema
+npm run test   # 8 suite dedicate + la valutazione automatica del recupero
 ```
 
 Le funzioni pure del motore sono testabili senza database e senza rete: gli

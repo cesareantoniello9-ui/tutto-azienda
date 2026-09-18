@@ -22,6 +22,8 @@ export const RAG_SOURCE_TYPES = [
   "note",
   "manual",
   "file",
+  "daily",
+  "email",
 ] as const;
 export type RagSourceType = (typeof RAG_SOURCE_TYPES)[number];
 
@@ -52,7 +54,9 @@ export const RAG_SOURCE_LABELS: Record<RagSourceType, string> = {
   activity: "Attività",
   note: "Nota",
   manual: "Documento interno",
-  file: "File",
+  file: "Allegato",
+  daily: "Riepilogo giornaliero",
+  email: "Email",
 };
 
 // ─────────────────────────────────────────────────────────────
@@ -72,6 +76,15 @@ export interface RagSettings {
   answer_model: string;
   embedding_model: string;
   effort: RagEffort;
+  /** Riepilogo di fine giornata generato dal cron. */
+  daily_recap_enabled: boolean;
+  /** Ora locale in cui lo scheduler esterno dovrebbe generarlo (0–23). */
+  daily_recap_hour: number;
+  email_ingestion_enabled: boolean;
+  /** Privacy: indicizza solo la posta legata a un contatto già nel CRM. */
+  email_only_known_contacts: boolean;
+  /** Domini ammessi anche senza corrispondenza nel CRM. */
+  email_allowed_domains: string[];
   created_at: Timestamp;
   updated_at: Timestamp;
 }
@@ -265,4 +278,162 @@ export interface RagAnswer {
 export interface RagHistoryTurn {
   role: RagMessageRole;
   content: string;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Fonti estese (migration 00007)
+// ─────────────────────────────────────────────────────────────
+
+/** Riepilogo di fine giornata: cosa è successo davvero oggi in azienda. */
+export interface RagDailyRecapRow {
+  id: UUID;
+  company_id: UUID;
+  recap_date: string;
+  summary: string;
+  highlights: string[];
+  stats: DailyStats;
+  generated_by: string | null;
+  generated_at: Timestamp;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+/** Numeri grezzi della giornata, calcolati dal database non dal modello. */
+export interface DailyStats {
+  clientsCreated: number;
+  leadsCreated: number;
+  leadsConverted: number;
+  opportunitiesOpened: number;
+  opportunitiesWon: number;
+  opportunitiesLost: number;
+  wonAmount: number;
+  quotesIssued: number;
+  quotesAccepted: number;
+  quotedAmount: number;
+  activitiesCompleted: number;
+  activitiesPlanned: number;
+  notesWritten: number;
+  emailsReceived: number;
+  filesUploaded: number;
+}
+
+/** Elemento della giornata, con il riferimento all'entità che lo ha prodotto. */
+export interface DailyEvent {
+  kind:
+    | "client"
+    | "lead"
+    | "opportunity"
+    | "quote"
+    | "activity"
+    | "note"
+    | "email"
+    | "file";
+  at: Timestamp;
+  text: string;
+}
+
+export type FileExtractionStatus = "pending" | "done" | "failed" | "unsupported";
+
+export interface RagFileRow {
+  id: UUID;
+  company_id: UUID;
+  storage_path: string;
+  file_name: string;
+  mime_type: string;
+  size_bytes: number;
+  title: string | null;
+  category: string | null;
+  client_id: UUID | null;
+  lead_id: UUID | null;
+  opportunity_id: UUID | null;
+  extracted_text: string | null;
+  extraction_status: FileExtractionStatus;
+  extraction_error: string | null;
+  page_count: number | null;
+  uploaded_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+export type EmailDirection = "inbound" | "outbound";
+
+export interface RagEmailRow {
+  id: UUID;
+  company_id: UUID;
+  message_id: string;
+  thread_id: string | null;
+  direction: EmailDirection;
+  subject: string | null;
+  from_address: string;
+  from_name: string | null;
+  to_addresses: string[];
+  cc_addresses: string[];
+  body_text: string;
+  sent_at: Timestamp;
+  client_id: UUID | null;
+  lead_id: UUID | null;
+  has_attachments: boolean;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+// ─────────────────────────────────────────────────────────────
+// Valutazione automatica
+// ─────────────────────────────────────────────────────────────
+
+/** Documento che una buona risposta deve recuperare. */
+export interface ExpectedSource {
+  sourceType: RagSourceType;
+  sourceId?: UUID;
+}
+
+export interface RagEvalCaseRow {
+  id: UUID;
+  company_id: UUID;
+  question: string;
+  expected_sources: ExpectedSource[];
+  expected_keywords: string[];
+  note: string | null;
+  is_active: boolean;
+  created_by: UUID | null;
+  created_at: Timestamp;
+  updated_at: Timestamp;
+}
+
+/** Esito di un singolo caso: recuperato? in che posizione? risposta ancorata? */
+export interface EvalCaseOutcome {
+  question: string;
+  caseId?: UUID | null;
+  hit: boolean;
+  /** Posizione 1-based del primo documento atteso fra i recuperati. */
+  rank: number | null;
+  /** `true` se per questo caso è stata generata una risposta (non solo recupero). */
+  generated: boolean;
+  grounded: boolean;
+  keywordsFound: string[];
+  keywordsMissing: string[];
+  answer?: string;
+  citations?: RagCitation[];
+  retrieved: { sourceType: RagSourceType; sourceId: UUID; title: string }[];
+}
+
+export interface EvalMetrics {
+  cases: number;
+  /** Casi in cui è stata generata una risposta: solo su questi ha senso l'ancoraggio. */
+  generatedCases: number;
+  /** Quota di domande in cui il documento atteso è stato recuperato. */
+  recallAtK: number;
+  /** Mean Reciprocal Rank: premia il documento atteso in cima. */
+  mrr: number;
+  /** Quota di risposte che citano davvero un documento del contesto. */
+  groundedRatio: number;
+  /** Quota media di parole chiave attese presenti nella risposta. */
+  keywordRatio: number;
+}
+
+export interface EvalRunReport extends EvalMetrics {
+  runId: UUID | null;
+  label: string;
+  outcomes: EvalCaseOutcome[];
+  durationMs: number;
 }
